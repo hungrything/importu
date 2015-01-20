@@ -1,7 +1,7 @@
 require 'active_record/errors'
 
 class Importu::Importer
-  attr_reader :options, :infile, :outfile, :validation_errors
+  attr_reader :options, :infile, :outfile, :validation_errors, :run_data
   attr_reader :total, :invalid, :created, :updated, :unchanged
 
   include Importu::Dsl
@@ -9,6 +9,7 @@ class Importu::Importer
 
   def initialize(infile, options = {})
     @options = options
+    @run_data = options.delete(:run_data)
     @total = @invalid = @created = @updated = @unchanged = 0
     @validation_errors = Hash.new(0) # counter for each validation error
 
@@ -91,23 +92,35 @@ class Importu::Importer
   end
 
   def find(scope, record)
-    # FIXME: find does not report if it finds more than one record matching
-    # the :find_by conditions passed in.  it just uses the first match for
-    # now.  what should be the correct behaviour?
-
     field_groups = self.class.finder_fields or return
     field_groups.each do |field_group|
       if field_group.respond_to?(:call) # proc
-        object = scope.instance_exec(record, &field_group).first
+        response = scope.instance_exec(record, &field_group)
+        if response.is_a? ActiveRecord::Relation
+          object = find_one_or_raise(response)
+        elsif response.is_a?(model_class)  || response.nil?  #no result is valid
+          object = response
+        else
+          raise(Importu::InvalidRecord, "find block returned a #{object.class}.  Should return ActiveRecord::Relation, model class #{model_class}, or nil")
+        end
       else
-        conditions = Hash[field_group.map {|f| [f, record[f]]}]
-        object = scope.where(conditions).first
+        object = find_one_or_raise( scope.where( Hash[ field_group.map{ |f| [f, record[f]] } ] ) )
       end
-
-      return object if object
+      return object 
     end
     nil
   end
+  
+  def find_one_or_raise(relation)
+    #Possible upgrade:  dsl :match_first_ordered_by
+    if relation.count > 1
+      raise(Importu::InvalidRecord, "record returned multiple matches")
+    else
+      object = relation.first
+    end
+  end
+    
+  
 
   def check_duplicate(record)
     return unless id = record.respond_to?(:id) && record.id

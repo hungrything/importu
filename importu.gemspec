@@ -5,8 +5,8 @@ Gem::Specification.new do |s|
   s.name        = 'importu'
   s.version     = Importu::VERSION
   s.platform    = Gem::Platform::RUBY
-  s.authors     = ['Daniel Hedlund']
-  s.email       = ['daniel@digitree.org']
+  s.authors     = ['Daniel Hedlund', 'David Hill']
+  s.email       = ['daniel@digitree.org', 'web-github@hungrything.net']
   s.homepage    = 'https://github.com/dhedlund/importu'
   s.summary     = 'A framework for importing data'
   s.description = 'Importu is a framework for importing data'
