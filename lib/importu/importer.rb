@@ -77,10 +77,12 @@ class Importu::Importer
 
     rescue Importu::InvalidRecord => e
       if errors = e.validation_errors
-        # convention: assume data-specific error messages put data inside parens, e.g. 'Dupe record found (sysnum 5489x)'
-        errors.each {|error| @validation_errors[error.gsub(/ *\([^)]+\)/,'')] += 1 }     
+        #is this used?
+        errors.each do |error| 
+          @validation_errors[remove_data_from_error_message(error)] += 1
+        end
       else
-        @validation_errors["#{e.name}: #{e.message}"] += 1
+        @validation_errors["#{e.name}: #{remove_data_from_error_message(e.message)}"] += 1
       end
 
       @invalid += 1
@@ -90,7 +92,12 @@ class Importu::Importer
       @total += 1
     end
   end
-
+  
+  def remove_data_from_error_message(msg)
+    # convention: assume data-specific error messages put data inside parens, e.g. 'Dupe record found (sysnum 5489x)'
+    msg.gsub(/ *\([^)]+\)/,'')
+  end
+  
   def find(scope, record)
     field_groups = self.class.finder_fields or return
     field_groups.each do |field_group|
