@@ -60,7 +60,7 @@ class Importu::Importer
     begin
       object = find(finder_scope, record) || model_class.new
       action = object.new_record? ? :create : :update
-      check_duplicate(object) if action == :update
+      #check_duplicate(object) if action == :update  #TEMP:  removing as default, in lieu of a switch later
 
       case ([action] - allowed_actions).first
         when :create then raise Importu::InvalidRecord, "#{model} not found"
